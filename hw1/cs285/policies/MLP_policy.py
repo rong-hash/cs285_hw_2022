@@ -82,7 +82,7 @@ class MLPPolicy(BasePolicy, nn.Module, metaclass=abc.ABCMeta):
 
         # TODO return the action that the policy prescribes
         
-        return ptu.to_numpy(self(observation))
+        return ptu.to_numpy(self(ptu.from_numpy(observation)))
     
     # update/train this policy
     def update(self, observations, actions, **kwargs):
@@ -127,7 +127,11 @@ class MLPPolicySL(MLPPolicy):
 
         # Forward pass
         predicted_distribution = self(observations)
-        loss = self.loss(predicted_distribution, actions)
+        if self.discrete:
+            predicted_action = predicted_distribution.logits
+        else:
+            predicted_action = predicted_distribution.mean
+        loss = self.loss(predicted_action, actions)
 
         # Backward pass and optimize
         self.optimizer.zero_grad()
