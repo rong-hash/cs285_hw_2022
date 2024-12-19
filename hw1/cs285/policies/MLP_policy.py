@@ -96,12 +96,12 @@ class MLPPolicy(BasePolicy, nn.Module, metaclass=abc.ABCMeta):
     def forward(self, observation: torch.FloatTensor) -> Any:
         if self.discrete:
             # For discrete actions, return categorical distribution
-            return distributions.Categorical(self.logits_na(observation))
+            return distributions.Categorical(self.logits_na(observation)).sample()
         else:
             # For continuous actions, return normal distribution
             mean = self.mean_net(observation)
             std = torch.exp(self.logstd)
-            return distributions.Normal(mean, std)
+            return distributions.Normal(mean, std).rsample()
             
 
 
@@ -126,11 +126,8 @@ class MLPPolicySL(MLPPolicy):
         self.optimizer.zero_grad()
 
         # Forward pass
-        predicted_distribution = self(observations)
-        if self.discrete:
-            predicted_action = predicted_distribution.logits
-        else:
-            predicted_action = predicted_distribution.mean
+        predicted_action = self(observations)
+
         loss = self.loss(predicted_action, actions)
 
         # Backward pass and optimize
